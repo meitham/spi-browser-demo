@@ -14,12 +14,14 @@
     <h1>An SPI object,<br>right in your browser.</h1>
     <p class="intro">Fetch a serialized object, edit its values, and serialize it with the same SPI library used by native applications.</p>
     <section class="fetch-panel" aria-labelledby="fetch-title">
-      <div class="section-title"><span class="step">01</span><h2 id="fetch-title">Fetch an object</h2><span class="tag">HTTP → WebAssembly</span></div>
+      <div class="section-title"><span class="step">01</span><h2 id="fetch-title">Load an object</h2><span class="tag">File or URL → WebAssembly</span></div>
       <form id="fetch-form">
         <label for="url">Serialized object URL</label>
-        <div class="url-row"><input id="url" name="url" value="./data/example.json" spellcheck="false" required><button id="load" disabled>Load object <span aria-hidden="true">↗</span></button></div>
+        <div class="url-row"><input id="url" name="url" value="./data/example.json" spellcheck="false" required><button id="load" disabled>Load from URL <span aria-hidden="true">↗</span></button></div>
       </form>
       <p class="hint">The included example is served by this project. Other origins must allow cross-origin requests (CORS).</p>
+      <div class="file-row"><button type="button" class="quiet" id="open-file" disabled>Open file…</button><span class="hint">Open a downloaded .spi or .json file. It stays on your computer.</span></div>
+      <input id="file" type="file" accept=".spi,.json,.txt" aria-label="Serialized object file" hidden disabled>
       <p id="status" role="status" aria-live="polite">Initializing the SPI runtime.</p>
       <p id="error" role="alert" hidden></p>
     </section>

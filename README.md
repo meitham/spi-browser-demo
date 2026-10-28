@@ -20,7 +20,9 @@ npm start
 ```
 
 Open **http://127.0.0.1:4173**. The example loads automatically. Change its fields,
-switch between SPI text and JSON, or download the serialized result.
+switch between SPI text and JSON, or download the serialized result. Use **Open file…**
+to reopen a downloaded `.spi` or `.json` file directly. It is read locally and never
+uploaded. **Load from URL** is for files served over HTTP(S).
 
 The build fetches SPI at commit
 [`c611c13`](https://github.com/meitham/spi/commit/c611c131828197cf86f2563ebda798ee25d957c3),
@@ -38,7 +40,7 @@ and `spi.wasm` together and serve `.mjs` as `text/javascript` and `.wasm` as
 ## The useful part
 
 [`public/spi-client.js`](public/spi-client.js) contains a reusable asynchronous
-`fromURL()` helper. It checks HTTP failures, passes response text directly to
+`fromURL()` helper and a local `fromFile(file)` helper. It checks HTTP failures, passes response text directly to
 SPI, and converts C++ exceptions into ordinary JavaScript errors while releasing
 their native storage.
 

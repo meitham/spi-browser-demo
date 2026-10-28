@@ -1,4 +1,4 @@
-import {loadSPI, callSPI, fromURL} from './spi-client.js';
+import {loadSPI, callSPI, fromURL, fromFile} from './spi-client.js';
 
 const $ = id => document.getElementById(id);
 let spi, object, format = 'TEXT';
@@ -12,13 +12,15 @@ function render() {
     $('total').textContent = (Number($('quantity').value) * Number($('price').value))
         .toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
-async function load() {
+async function load(read = () => fromURL($('url').value.trim()), source = 'HTTP') {
     $('load').disabled = true;
+    $('open-file').disabled = true;
+    $('file').disabled = true;
     $('error').hidden = true;
-    $('status').textContent = 'Fetching serialized object…';
+    $('status').textContent = source === 'HTTP' ? 'Fetching serialized object…' : 'Reading local file…';
     let incoming;
     try {
-        incoming = await fromURL($('url').value.trim());
+        incoming = await read();
         const values = callSPI(spi, () => ({name: incoming.getString('name'),
             quantity: incoming.getDouble('quantity'), price: incoming.getDouble('price'),
             enabled: incoming.getBool('enabled'), type: incoming.typeName()}));
@@ -33,16 +35,26 @@ async function load() {
         $('fields').disabled = false;
         $('download').disabled = false;
         render();
-        $('status').textContent = 'Loaded over HTTP · parsed by SPI';
+        $('status').textContent = source === 'HTTP' ? 'Loaded over HTTP · parsed by SPI' : `Opened ${source} · parsed by SPI`;
     } catch (error) {
         $('status').textContent = object ? 'Previous object retained.' : 'No object loaded.';
         showError(error);
     } finally {
         incoming?.delete();
         $('load').disabled = false;
+        $('open-file').disabled = false;
+        $('file').disabled = false;
     }
 }
 $('fetch-form').addEventListener('submit', event => { event.preventDefault(); load(); });
+$('open-file').addEventListener('click', () => {
+    $('file').value = '';
+    $('file').click();
+});
+$('file').addEventListener('change', () => {
+    const file = $('file').files[0];
+    if (file) load(() => fromFile(file), file.name);
+});
 for (const name of ['name', 'quantity', 'price', 'enabled']) {
     $(name).addEventListener('input', () => {
         if (!object || !$(name).checkValidity()) return;
