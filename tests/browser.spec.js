@@ -1,5 +1,6 @@
 import {test, expect} from '@playwright/test';
 import {readFile} from 'node:fs/promises';
+import {createServer} from 'node:http';
 
 async function ready(page) {
     await page.goto('/');
@@ -71,8 +72,47 @@ test('supports cancellation and displays network failures', async ({page}) => {
     await page.route('**/offline.spi', route => route.abort());
     await page.locator('#url').fill('./offline.spi');
     await page.getByRole('button', {name: 'Load from URL'}).click();
-    await expect(page.getByRole('alert')).toContainText('Failed to fetch');
+    await expect(page.getByRole('alert')).toContainText('Could not fetch the object');
 });
+
+for (const format of ['TEXT', 'JSON']) {
+    test(`loads downloaded ${format} from a second HTTP server only when CORS is allowed`, async ({page}) => {
+        await ready(page);
+        await page.locator('#name').fill('HTTP round trip');
+        if (format === 'JSON') await page.getByRole('button', {name: 'JSON', exact: true}).click();
+        const waiting = page.waitForEvent('download');
+        await page.getByRole('button', {name: 'Download'}).click();
+        const download = await waiting;
+        const body = await readFile(await download.path());
+        const origin = new URL(page.url()).origin;
+        let allowCORS = false;
+        let requests = 0;
+        const server = createServer((request, response) => {
+            requests++;
+            if (allowCORS) response.setHeader('Access-Control-Allow-Origin', origin);
+            response.setHeader('Cache-Control', 'no-store');
+            response.end(body);
+        });
+        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+        try {
+            await page.locator('#name').fill('Current object');
+            await page.locator('#url').fill(`http://127.0.0.1:${server.address().port}/${download.suggestedFilename()}`);
+            await page.getByRole('button', {name: 'Load from URL'}).click();
+            await expect(page.getByRole('alert')).toContainText('requires the file server to allow CORS');
+            await expect(page.locator('#name')).toHaveValue('Current object');
+            expect(requests).toBe(1);
+            allowCORS = true;
+            await page.getByRole('button', {name: 'Load from URL'}).click();
+            await expect(page.getByRole('status')).toHaveText('Loaded over HTTP · parsed by SPI');
+            await expect(page.locator('#name')).toHaveValue('HTTP round trip');
+            await expect(page.getByRole('alert')).toBeHidden();
+            expect(requests).toBe(2);
+        } finally {
+            server.closeAllConnections();
+            await new Promise(resolve => server.close(resolve));
+        }
+    });
+}
 
 for (const format of ['TEXT', 'JSON']) {
     test(`reopens a downloaded ${format} file using the file picker without uploading`, async ({page}) => {

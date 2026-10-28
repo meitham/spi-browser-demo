@@ -24,6 +24,17 @@ switch between SPI text and JSON, or download the serialized result. Use **Open 
 to reopen a downloaded `.spi` or `.json` file directly. It is read locally and never
 uploaded. **Load from URL** is for files served over HTTP(S).
 
+To reload a download over HTTP, copy it into this demo's `public/data/` directory
+and enter `./data/scenario.spi` (or `./data/scenario.json`) in **Load from URL**.
+This serves the app and file from the same origin.
+
+A separate `python -m http.server` does not enable CORS. If the app is on port
+4173 and the files are on port 8000, the browser blocks the app from reading them,
+even when the file URL opens directly and Python logs a successful request.
+Different ports or hostnames (including `localhost` versus `127.0.0.1`) are
+different origins. Serve both from the same origin, configure the file server
+to allow the app's origin with `Access-Control-Allow-Origin`, or use **Open file…**.
+
 The build fetches SPI at commit
 [`c611c13`](https://github.com/meitham/spi/commit/c611c131828197cf86f2563ebda798ee25d957c3),
 which contains the Emscripten integration. It builds the module into `public/vendor/`;
